@@ -1,0 +1,104 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int         @id @default(autoincrement())
+  nome           String
+  email          String      @unique
+  senha          String
+  reset_senha    Boolean     @default(false)
+  is_super_admin Boolean     @default(false)
+  activo         Boolean     @default(true)
+  userRoles      UserRole[]
+  userPostos     UserPosto[]
+  tickets        Ticket[]
+}
+
+model Role {
+  id              Int              @id @default(autoincrement())
+  nome            String
+  descricao       String?
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+}
+
+model UserRole {
+  id_user Int
+  id_role Int
+  User    User @relation(fields: [id_user], references: [id])
+  Role    Role @relation(fields: [id_role], references: [id])
+
+  @@id([id_user, id_role])
+}
+
+model RolePermission {
+  id_role       Int
+  id_permission Int
+  Role          Role @relation(fields: [id_role], references: [id])
+
+  @@id([id_role, id_permission])
+}
+
+model Posto {
+  id         Int         @id @default(autoincrement())
+  nome       String
+  userPostos UserPosto[]
+}
+
+model UserPosto {
+  id       Int      @id @default(autoincrement())
+  id_user  Int
+  id_posto Int
+  data     DateTime @default(now())
+  User     User     @relation(fields: [id_user], references: [id])
+  Posto    Posto    @relation(fields: [id_posto], references: [id])
+}
+
+model Servicos {
+  id           Int      @id @default(autoincrement())
+  nome_servico String
+  status       Boolean // true = 1 (ativo), false = 0 (inativo)
+  tickets      Ticket[]
+}
+
+model Ticket {
+  id            Int      @id @default(autoincrement())
+  id_servico    Int
+  nome_servico  String
+  data          DateTime
+  hora          DateTime
+  id_utilizador Int?
+  status        Status // Enum para status do ticket
+  reacao        Reacao // Enum para reações
+  Servicos      Servicos @relation(fields: [id_servico], references: [id])
+  User          User?    @relation(fields: [id_utilizador], references: [id])
+}
+
+enum Status {
+  espera
+  atendido
+  cancelado
+  chamando
+  atendendo
+}
+
+enum Reacao {
+  pessima
+  ruim
+  media
+  boa
+  otima
+  excelente
+}
