@@ -9,6 +9,6 @@ export const ServiceRoutes = Router();
 
 ServiceRoutes.post("/create", createServiveController);
 ServiceRoutes.put("/update/:id", updateServiceController);
-ServiceRoutes.delete("/delete", destroyServiceController);
+ServiceRoutes.delete("/delete/:id", destroyServiceController);
 ServiceRoutes.get("/true", ListtrueController);
 ServiceRoutes.get("/all", ListAllController);

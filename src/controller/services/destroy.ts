@@ -20,7 +20,7 @@ export const destroyServiceController = async (req: Request, res: Response) => {
     const dados = await destroyService(Number(id));
 
     // Retorna o serviço criado
-    return res.status(201).json({ message: "Serviço criado", dados });
+    return res.status(201).json({ message: "Serviço Deletado", dados });
   } catch (err) {
     console.error(err);
     return res.status(400).json(err);
