@@ -33,3 +33,22 @@ export const destroyService = async (id: number) => {
   });
   return dados;
 };
+
+export const disableService = async (id: number) => {
+  const dados = await prisma.servicos.update({
+    where: { id: Number(id) },
+    data: {
+      status: false,
+    },
+  });
+  return dados;
+};
+export const enableService = async (id: number) => {
+  const dados = await prisma.servicos.update({
+    where: { id: Number(id) },
+    data: {
+      status: true,
+    },
+  });
+  return dados;
+};
