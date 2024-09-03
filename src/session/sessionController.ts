@@ -5,6 +5,10 @@ import jwt from "jsonwebtoken";
 import z from "zod";
 import { CustomError } from "../errors/CustomError";
 
+export interface decodedUser {
+  id: number;
+}
+
 const loginSchema = z.object({
   email: z
     .string({ required_error: "Este campo não pode ser nulo!" })
@@ -45,7 +49,8 @@ export const loginUser = async (req: Request, res: Response) => {
     if (!user.activo) {
       throw new CustomError(
         "Conta desativada. Entre em contato com o administrador.",
-        400
+        400,
+        ["Conta desativada. Entre em contato com o administrador."]
       );
     }
 
@@ -61,7 +66,8 @@ export const loginUser = async (req: Request, res: Response) => {
       process.env.JWT_SECRET || "your-secret-key",
       { expiresIn: "1h" }
     );
-
+    req.user = { id: user.id };
+    console.log(req.user.id);
     return res.status(200).json({ token, user });
   } catch (error) {
     console.log(error);

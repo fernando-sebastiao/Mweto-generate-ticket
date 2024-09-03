@@ -81,7 +81,7 @@ model Ticket {
   hora          DateTime
   id_utilizador Int?
   status        Status // Enum para status do ticket
-  reacao        Reacao // Enum para reações
+  reacao        Int? // Enum para reações
   Servicos      Servicos @relation(fields: [id_servico], references: [id])
   User          User?    @relation(fields: [id_utilizador], references: [id])
 }
@@ -92,13 +92,4 @@ enum Status {
   cancelado
   chamando
   atendendo
-}
-
-enum Reacao {
-  pessima
-  ruim
-  media
-  boa
-  otima
-  excelente
 }

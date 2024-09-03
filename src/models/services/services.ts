@@ -11,7 +11,7 @@ export const createService = async (nome: string, status: boolean) => {
 };
 
 export const updateService = async (
-  id: string,
+  id: number,
   nome_servico: string,
   status: boolean
 ) => {

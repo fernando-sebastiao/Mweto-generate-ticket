@@ -48,7 +48,7 @@ export const updateServiceController = async (req: Request, res: Response) => {
     }
 
     // Atualiza o serviço no banco de dados
-    const dados = await updateService(id, nome_servico, status);
+    const dados = await updateService(Number(id), nome_servico, status);
 
     return res.status(200).json({ message: "Serviço atualizado", dados });
   } catch (err) {
