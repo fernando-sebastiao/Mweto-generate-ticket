@@ -6,6 +6,9 @@ export const ListtrueController = async (req: Request, res: Response) => {
     where: {
       status: true,
     },
+    orderBy: {
+      id: "asc",
+    },
   });
 
   return res.status(200).json(data);
