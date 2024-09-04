@@ -14,5 +14,12 @@ export const updatePosto = async (id: number, nome: string) => {
     where: { id },
     data: nome,
   });
+  return dados.id;
+};
+
+export const destroyPosto = async (id: number) => {
+  const dados = await prisma.posto.delete({
+    where: { id: Number(id) },
+  });
   return dados;
 };
