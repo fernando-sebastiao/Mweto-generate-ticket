@@ -88,10 +88,11 @@ export const generateTicketController = async (req: Request, res: Response) => {
         id_utilizador: req.user?.id, // Usando o ID do usuário logado
         status: "espera", // Status inicial do ticket
         reacao, // Passando a reação validada
+        senha: numeroTicket,
       },
     });
     console.log(req.user?.id);
-    return res.status(201).json({ message: "Ticket criado!", numeroTicket });
+    return res.status(201).json(ticket);
   } catch (error) {
     console.error(error);
     return res.status(400).json({ error: error.message });

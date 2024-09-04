@@ -77,6 +77,7 @@ model Ticket {
   id            Int      @id @default(autoincrement())
   id_servico    Int
   nome_servico  String
+  senha         String?
   data          DateTime
   hora          DateTime
   id_utilizador Int?
