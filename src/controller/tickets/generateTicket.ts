@@ -15,7 +15,7 @@ const generateTicketBodySchema = z.object({
 const generateTicketParamsSchema = z.object({
   letra: z
     .string({ required_error: "O parâmetro letra é obrigatório!" })
-    .length(1, { message: "A letra deve ter exatamente 1 caractere." }),
+    .length(2, { message: "A letra deve ter exatamente 2 caracteres!" }),
 });
 
 export const generateTicketController = async (req: Request, res: Response) => {
@@ -36,7 +36,7 @@ export const generateTicketController = async (req: Request, res: Response) => {
     const verificarParams = generateTicketParamsSchema.safeParse(req.params);
     if (!verificarParams.success) {
       throw new CustomError(
-        "Erros de validação nos parâmetros da URL",
+        "A campo letra passada por paramêtro, precisa ter no minímo 2 caractéres!",
         400,
         verificarParams.error.errors.map(
           (error) => `${error.path[0]}: ${error.message}`
@@ -56,11 +56,29 @@ export const generateTicketController = async (req: Request, res: Response) => {
       throw new CustomError("Serviço não encontrado.", 404);
     }
 
+    // Incrementar 1 hora para ajustar ao fuso horário de Angola
+    const dataComAjuste = new Date();
+    dataComAjuste.setHours(dataComAjuste.getHours() + 1);
+
+    // Inserir o ticket inicialmente sem o número completo do ticket
+    const ticket = await prisma.ticket.create({
+      data: {
+        id_servico,
+        nome_servico: servicoExistente.nome_servico, // Nome do serviço
+        data: dataComAjuste, // Armazenando a data ajustada
+        hora: dataComAjuste, // Hora ajustada
+        id_utilizador: req.user?.id, // Usando o ID do usuário logado
+        status: "espera", // Status inicial do ticket
+        reacao, // Passando a reação validada
+        senha: letra, // Inicialmente vazio
+      },
+    });
+
+    // Após inserir o ticket, buscar o número de tickets gerados para o serviço no mesmo dia
     const dataAtual = new Date();
     const inicioDia = new Date(dataAtual.setHours(0, 0, 0, 0)); // Início do dia
     const fimDia = new Date(dataAtual.setHours(23, 59, 59, 999)); // Fim do dia
 
-    // Conta o número de tickets para o serviço e data atual
     const ticketCount = await prisma.ticket.count({
       where: {
         id_servico,
@@ -71,28 +89,16 @@ export const generateTicketController = async (req: Request, res: Response) => {
       },
     });
 
-    // Gerar o número do ticket
+    // Gerar o número do ticket com a letra e o número
     const numeroTicket = `${letra}${String(ticketCount + 1).padStart(3, "0")}`;
 
-    // Incrementar 1 hora para ajustar ao fuso horário de Angola
-    const dataComAjuste = new Date();
-    dataComAjuste.setHours(dataComAjuste.getHours() + 1);
-
-    // Criar o ticket
-    const ticket = await prisma.ticket.create({
-      data: {
-        id_servico,
-        nome_servico: servicoExistente.nome_servico, // Nome do serviço com base na letra
-        data: dataComAjuste, // Armazenando a data ajustada
-        hora: dataComAjuste, // Hora ajustada
-        id_utilizador: req.user?.id, // Usando o ID do usuário logado
-        status: "espera", // Status inicial do ticket
-        reacao, // Passando a reação validada
-        senha: numeroTicket,
-      },
+    // Atualizar o ticket com o número completo
+    const ticketAtualizado = await prisma.ticket.update({
+      where: { id: ticket.id },
+      data: { senha: numeroTicket },
     });
-    console.log(req.user?.id);
-    return res.status(201).json(ticket);
+
+    return res.status(201).json(ticketAtualizado);
   } catch (error) {
     console.error(error);
     return res.status(400).json({ error: error.message });
