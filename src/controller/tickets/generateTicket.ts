@@ -91,9 +91,7 @@ export const generateTicketController = async (req: Request, res: Response) => {
       },
     });
     console.log(req.user?.id);
-    return res
-      .status(201)
-      .json({ message: "Ticket criado!", ticket, numeroTicket });
+    return res.status(201).json({ message: "Ticket criado!", numeroTicket });
   } catch (error) {
     console.error(error);
     return res.status(400).json({ error: error.message });

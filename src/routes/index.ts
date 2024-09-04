@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { loginUser } from "../session/sessionController";
+import { postoRoutes } from "./posto";
 import { ServiceRoutes } from "./servicesRoutes";
 import ticketRoutes from "./ticketRoutes";
 
@@ -11,3 +12,5 @@ routes.post("/login", loginUser);
 routes.use("/services", ServiceRoutes);
 //rotas do ticket
 routes.use("/ticket", ticketRoutes);
+//rotas do posto
+routes.use("/posto", postoRoutes);
