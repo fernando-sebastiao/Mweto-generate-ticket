@@ -5,7 +5,7 @@ import { createPosto } from "../../models/postos/posto";
 
 export const postoSchema = z.object({
   nome: z
-    .string()
+    .string({ required_error: "O nome do posto é obrigatório!" })
     .min(6, { message: "O posto precisa ter no minímo 6 caractéres!" }),
 });
 
