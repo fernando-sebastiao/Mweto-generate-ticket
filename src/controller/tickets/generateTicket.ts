@@ -1,7 +1,11 @@
 import { Request, Response } from "express";
+import fs from "fs";
+import path from "path";
+import PDFDocument from "pdfkit";
 import z from "zod";
 import { prisma } from "../../database/db";
 import { CustomError } from "../../errors/CustomError";
+import { imprimir } from "../../testando";
 
 // Schema de validação usando Zod
 const generateTicketBodySchema = z.object({
@@ -18,6 +22,7 @@ const generateTicketParamsSchema = z.object({
     .length(2, { message: "A letra deve ter exatamente 2 caracteres!" }),
 });
 
+// Gerar ticket
 export const generateTicketController = async (req: Request, res: Response) => {
   try {
     // Validação do corpo da requisição (body)
@@ -36,7 +41,7 @@ export const generateTicketController = async (req: Request, res: Response) => {
     const verificarParams = generateTicketParamsSchema.safeParse(req.params);
     if (!verificarParams.success) {
       throw new CustomError(
-        "A campo letra passada por paramêtro, precisa ter no minímo 2 caractéres!",
+        "O campo letra passado como parâmetro precisa ter exatamente 2 caracteres!",
         400,
         verificarParams.error.errors.map(
           (error) => `${error.path[0]}: ${error.message}`
@@ -64,27 +69,27 @@ export const generateTicketController = async (req: Request, res: Response) => {
     const ticket = await prisma.ticket.create({
       data: {
         id_servico,
-        nome_servico: servicoExistente.nome_servico, // Nome do serviço
-        data: dataComAjuste, // Armazenando a data ajustada
-        hora: dataComAjuste, // Hora ajustada
-        id_utilizador: req.user?.id, // Usando o ID do usuário logado
-        status: "espera", // Status inicial do ticket
-        reacao, // Passando a reação validada
-        senha: letra, // Inicialmente vazio
+        nome_servico: servicoExistente.nome_servico,
+        data: dataComAjuste,
+        hora: dataComAjuste,
+        id_utilizador: req.user?.id,
+        status: "espera",
+        reacao,
+        senha: letra,
       },
     });
 
-    // Após inserir o ticket, buscar o número de tickets gerados para o serviço no mesmo dia
+    // Buscar o número de tickets gerados para o serviço no mesmo dia
     const dataAtual = new Date();
-    const inicioDia = new Date(dataAtual.setHours(0, 0, 0, 0)); // Início do dia
-    const fimDia = new Date(dataAtual.setHours(23, 59, 59, 999)); // Fim do dia
+    const inicioDia = new Date(dataAtual.setHours(0, 0, 0, 0));
+    const fimDia = new Date(dataAtual.setHours(23, 59, 59, 999));
 
     const ticketCount = await prisma.ticket.count({
       where: {
         id_servico,
         data: {
-          gte: inicioDia, // Tickets gerados desde o início do dia
-          lte: fimDia, // Até o final do dia
+          gte: inicioDia,
+          lte: fimDia,
         },
       },
     });
@@ -96,6 +101,38 @@ export const generateTicketController = async (req: Request, res: Response) => {
     const ticketAtualizado = await prisma.ticket.update({
       where: { id: ticket.id },
       data: { senha: numeroTicket },
+    });
+
+    // Criar e gerar o PDF com a senha usando PDFKit
+    const tmpDir = path.join(__dirname, "../../tmp");
+    if (!fs.existsSync(tmpDir)) {
+      fs.mkdirSync(tmpDir, { recursive: true });
+    }
+    const fileName = path.join(tmpDir, `senha_${ticket.id}.pdf`);
+    const doc = new PDFDocument();
+    const writeStream = fs.createWriteStream(fileName);
+
+    doc.pipe(writeStream);
+
+    // Posições para centralizar o texto
+    const larguraPagina = 595; // A4 em pontos (width)
+    const alturaPagina = 842; // A4 em pontos (height)
+
+    // Definindo o tamanho da fonte
+    doc.fontSize(25);
+
+    // Centralizando o texto
+    const texto = `Senha: ${numeroTicket}`;
+    const larguraTexto = doc.widthOfString(texto);
+    const posX = (larguraPagina - larguraTexto) / 2; // Posição X para centralizar
+    const posY = alturaPagina / 2; // Posição Y (metade da altura da página)
+
+    doc.text(texto, posX, posY);
+    doc.end();
+
+    // Após gerar o PDF, enviar para a impressora
+    writeStream.on("finish", () => {
+      imprimir(ticket.id);
     });
 
     return res.status(201).json(ticketAtualizado);
