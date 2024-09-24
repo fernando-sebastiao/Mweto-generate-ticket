@@ -13,7 +13,7 @@ app.use(express.urlencoded({ extended: true }));
 app.get("/", (req: Request, res: Response) => {
   return res.json({ message: "Server running so well! 🔥" });
 });
-const PORT = 8888;
+const PORT = process.env.PORT;
 
 const server = app.listen(PORT, () => {
   try {

@@ -61,18 +61,14 @@ export const generateTicketController = async (req: Request, res: Response) => {
       throw new CustomError("Serviço não encontrado.", 404);
     }
 
-    // Incrementar 1 hora para ajustar ao fuso horário de Angola
-    const dataComAjuste = new Date();
-    dataComAjuste.setHours(dataComAjuste.getHours() + 1);
-
     // Inserir o ticket inicialmente sem o número completo do ticket
     const ticket = await prisma.ticket.create({
       data: {
         id_servico,
         nome_servico: servicoExistente.nome_servico,
-        data: dataComAjuste,
-        hora: dataComAjuste,
-        id_utilizador: req.user?.id,
+        data: new Date(), // Data atual sem ajuste manual
+        hora: new Date(), // Hora atual sem ajuste manual
+        id_utilizador: null, //req.user?.id
         status: "espera",
         reacao,
         senha: letra,
@@ -109,25 +105,48 @@ export const generateTicketController = async (req: Request, res: Response) => {
       fs.mkdirSync(tmpDir, { recursive: true });
     }
     const fileName = path.join(tmpDir, `senha_${ticket.id}.pdf`);
-    const doc = new PDFDocument();
+    const doc = new PDFDocument({ size: "A4" }); // Tamanho A4
     const writeStream = fs.createWriteStream(fileName);
 
     doc.pipe(writeStream);
 
-    // Posições para centralizar o texto
-    const larguraPagina = 595; // A4 em pontos (width)
-    const alturaPagina = 842; // A4 em pontos (height)
+    // Definindo margens e centralizando o conteúdo
+    const margemSuperior = 100;
+    doc.moveDown(margemSuperior / 25);
 
-    // Definindo o tamanho da fonte
-    doc.fontSize(25);
+    // Título e informações acima da senha
+    doc.fontSize(16).text("Dev Bantu Tecnology", { align: "center" });
+    doc.text("Consultoria, Fiscalização e Criação de Software!", {
+      align: "center",
+    });
+    doc.moveDown();
 
-    // Centralizando o texto
-    const texto = `Senha: ${numeroTicket}`;
-    const larguraTexto = doc.widthOfString(texto);
-    const posX = (larguraPagina - larguraTexto) / 2; // Posição X para centralizar
-    const posY = alturaPagina / 2; // Posição Y (metade da altura da página)
+    // Usando a data e hora armazenadas no ticket
+    doc.text(`Data/Hora: ${ticketAtualizado.data.toLocaleString()}`, {
+      align: "center",
+    });
 
-    doc.text(texto, posX, posY);
+    // Adicionando espaçamento antes da senha
+    doc.moveDown(2);
+
+    // Centralizando a senha
+    const textoSenha = `Senha: ${numeroTicket}`;
+    doc.fontSize(25).text(textoSenha, { align: "center" });
+
+    // Adicionando instruções abaixo da senha
+    doc.moveDown(2);
+    doc
+      .fontSize(10)
+      .text(
+        "Por favor, ao final de seu atendimento nos informe o que você achou do mesmo.",
+        { align: "center" }
+      );
+    doc.text(
+      "Para isso, o site https://www.mweto.com/reagirticket com seu smartphone até as 22:00 de hoje.",
+      { align: "center" }
+    );
+
+    // Finalizar o documento PDF
     doc.end();
 
     // Após gerar o PDF, enviar para a impressora
